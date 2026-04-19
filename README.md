@@ -65,6 +65,30 @@ Flags:
 
 Classic/TextInput is **not** supported — use modern `TextInput` with `Placeholder` and reference `.Value` in formulas.
 
+## Auto-injected properties
+
+Power Apps Studio writes several internal-layout defaults into `.fx.yaml` during an authoring session that `.pa.yaml` omits as implicit. `pac canvas pack` does not backfill them, and containers rendered without them collapse or misalign on mobile even though they display in Studio. The converter injects these automatically when the user hasn't set them explicitly:
+
+**On every `GroupContainer` + `Variant: AutoLayout`** (→ `groupContainer.horizontalAutoLayoutContainer`):
+
+```
+LayoutMode: =LayoutMode.Auto
+maximumHeight: =11360
+maximumWidth: =640
+LayoutMinWidth: =250
+LayoutGridColumns: =6
+LayoutGridRows: =6
+ZIndex: =1
+```
+
+**On every `Gallery` + `Variant: Vertical`** (→ `gallery.galleryVertical`):
+
+```
+Layout: =Layout.Vertical
+```
+
+The defaults are matched against the Field Issue Logger reference — a known-working canvas app that was built end-to-end in Studio with coauth. If a `.pa.yaml` source explicitly sets any of these properties, the user value wins.
+
 ## Running just the converter (without deploy)
 
 ```bash

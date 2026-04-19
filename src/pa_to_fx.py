@@ -124,6 +124,24 @@ def _emit_control(name: str, body: dict, indent_level: int) -> list[str]:
     if fx_type == "gallery.galleryVertical" and "Layout" not in props:
         props["Layout"] = "=Layout.Vertical"
 
+    # GroupContainer auto-layout: Studio authors these defaults during
+    # coauth; omitting them produces containers that render in Studio but
+    # collapse or misalign on mobile (verified against the Field Issue
+    # Logger reference .fx.yaml). Inject only when the user hasn't set them.
+    if fx_type == "groupContainer.horizontalAutoLayoutContainer":
+        autolayout_defaults = {
+            "LayoutMode": "=LayoutMode.Auto",
+            "maximumHeight": "=11360",
+            "maximumWidth": "=640",
+            "LayoutMinWidth": "=250",
+            "LayoutGridColumns": "=6",
+            "LayoutGridRows": "=6",
+            "ZIndex": "=1",
+        }
+        for k, v in autolayout_defaults.items():
+            if k not in props:
+                props[k] = v
+
     lines.extend(_emit_properties(props, indent_level + 1))
 
     children = body.get("Children", []) or []
