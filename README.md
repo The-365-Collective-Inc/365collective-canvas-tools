@@ -4,14 +4,13 @@ Delivery infrastructure for Power Apps canvas apps authored as `.pa.yaml` source
 
 ## What it does
 
-Converts coauth-format `.pa.yaml` source files into a legacy `.fx.yaml` tree that `pac canvas pack` can consume, then runs the full deploy pipeline:
+Copies authored `.pa.yaml` source files into the canonical location `pac canvas pack` reads, then runs the full deploy pipeline:
 
 ```
 local .pa.yaml
-     ↓  (pa_to_fx converter)
-.fx.yaml tree
-     ↓  (pac canvas pack)
-.msapp file
+     ↓  (file copy → unpacked/Other/Src/*.pa.yaml)
+     ↓  (also: pa_to_fx converter → unpacked/Src/*.fx.yaml as fallback)
+.msapp file (pac canvas pack)
      ↓  (solution zip swap)
 solution.zip with updated canvas app
      ↓  (pac solution import --force-overwrite)
@@ -20,7 +19,9 @@ Target environment
 
 ## Why
 
-`.pa.yaml` is the newer coauth format used by the Canvas Authoring MCP, but `pac canvas pack` only reads legacy `.fx.yaml`. There is currently no Microsoft-supplied bridge. This tool is that bridge.
+`pac canvas pack` reads the canonical coauth source from `Other/Src/*.pa.yaml` (newer format), not `Src/*.fx.yaml` (legacy). When the unpacked tree's `.pa.yaml` exists with content (always true after a roundtrip), pack ignores `.fx.yaml` and any edits to it are silently dropped. Our authored format already matches what unpack produces in `Other/Src/`, so the deploy is a straight file copy.
+
+The legacy `.fx.yaml` conversion (via `pa_to_fx`) is still emitted as a fallback for fresh scaffolds whose `Other/Src/*.pa.yaml` is empty/minimal — pack falls back to `.fx.yaml` in that case.
 
 ## Prerequisites
 

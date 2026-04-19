@@ -151,10 +151,31 @@ def deploy(
     # 3. inject templates
     inject_templates(unpacked)
 
-    # 4. convert .pa.yaml → .fx.yaml (overwrites Src/*.fx.yaml)
+    # 4. write source .pa.yaml into the unpacked tree.
+    #
+    # `pac canvas pack` reads the canonical coauth source from
+    # `Other/Src/*.pa.yaml` (newer format), NOT the legacy `Src/*.fx.yaml`.
+    # When `Other/Src/*.pa.yaml` exists with content (always true after a
+    # roundtrip), pack ignores `.fx.yaml` and any edits to it are silently
+    # dropped. Copy our authored .pa.yaml directly into Other/Src/ — our
+    # source format matches what unpack produces there, so this is a
+    # straight file copy with no conversion.
+    #
+    # Also keep emitting .fx.yaml in Src/ as a fallback for fresh scaffolds
+    # whose `Other/Src/*.pa.yaml` is empty/minimal — pack falls back to
+    # .fx.yaml in that case.
+    shadow_dir = unpacked / "Other" / "Src"
+    shadow_dir.mkdir(parents=True, exist_ok=True)
+    copied = []
+    for pa_file in sorted(source.glob("*.pa.yaml")):
+        dst = shadow_dir / pa_file.name
+        shutil.copyfile(pa_file, dst)
+        copied.append(pa_file.name)
+    print(f"copied {len(copied)} .pa.yaml files into Other/Src/")
+
     src_dir = unpacked / "Src"
     written = pa_to_fx.convert_directory(source, src_dir)
-    print(f"converted {len(written)} files")
+    print(f"also converted {len(written)} files into Src/ (fallback)")
 
     # 5. pack
     run(["pac", "canvas", "pack", "--sources", str(unpacked),
